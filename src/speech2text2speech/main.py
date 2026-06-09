@@ -8,7 +8,6 @@ import sounddevice as sd
 from vosk import KaldiRecognizer, Model
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 # Robust path resolution
 BASE_DIR = Path(__file__).resolve().parent
@@ -115,5 +114,21 @@ class SpeechToTextToSpeech(SpeechToText, TextToSpeech):
 
 
 if __name__ == "__main__":
+    import argparse
+
+    from vosk import SetLogLevel
+
+    parser = argparse.ArgumentParser(description="Speech to Text")
+    parser.add_argument("--prod", action="store_true", help="Lancer en mode production (désactive les logs)")
+    args = parser.parse_args()
+
+    # Configuration des logs Python
+    log_level = logging.WARNING if args.prod else logging.DEBUG
+    logging.basicConfig(level=log_level, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    # Configuration des logs C++ de Vosk
+    if args.prod:
+        SetLogLevel(-1)
+
     stt = SpeechToText()
     stt.start_listening()
