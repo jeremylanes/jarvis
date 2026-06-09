@@ -130,5 +130,5 @@ if __name__ == "__main__":
     if args.prod:
         SetLogLevel(-1)
 
-    stt = SpeechToText()
+    stt = SpeechToTextToSpeech()
     stt.start_listening()
