@@ -1,3 +1,4 @@
 .idea/
 _pycache__/
 .python-version
+*.json

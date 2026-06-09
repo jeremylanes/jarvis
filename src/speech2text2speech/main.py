@@ -1,5 +1,6 @@
 import json
 import queue
+import time
 from pathlib import Path
 
 import sounddevice as sd
@@ -15,29 +16,75 @@ class SpeechToText:
         self.q = queue.Queue()
         self.model = Model(str(MODEL_PATH))
         self.rec = KaldiRecognizer(self.model, 16000)
-        self.text = ""
+        self.accumulated_text = []
+        self.current_paragraph = ""
+        self.last_speech_time = time.time()
+        self.is_listening_msg_visible = False
+        self.json_path = BASE_DIR / "transcription.json"
 
-    def callback(self, indata, frames, time, status):
+    def callback(self, indata, frames, time_info, status):
         self.q.put(bytes(indata))
 
+    def save_transcription(self, final=False):
+        if self.current_paragraph.strip():
+            self.accumulated_text.append(self.current_paragraph.strip())
+            self.current_paragraph = ""
+
+        with open(self.json_path, "w", encoding="utf-8") as f:
+            json.dump(self.accumulated_text, f, ensure_ascii=False, indent=4)
+
+    def show_listening(self):
+        print("\rListening...        ", end="\rListening...", flush=True)
+        self.is_listening_msg_visible = True
+
+    def hide_listening(self):
+        if self.is_listening_msg_visible:
+            print("\r" + " " * 20 + "\r", end="", flush=True)
+            self.is_listening_msg_visible = False
+
     def start_listening(self):
-        print("Listening...")
-        with sd.RawInputStream(
-            samplerate=16000,
-            blocksize=8000,
-            dtype="int16",
-            channels=1,
-            callback=self.callback
-        ):
-            while True:
-                data = self.q.get()
-                if self.rec.AcceptWaveform(data):
-                    result = json.loads(self.rec.Result())
-                    self.text = result.get("text", "")
-                    print(f">> {self.text}")
-                else:
-                    partial = json.loads(self.rec.PartialResult()).get("partial", "")
-                    print(f".. {partial}", end="\r")
+        self.show_listening()
+        self.last_speech_time = time.time()
+
+        try:
+            with sd.RawInputStream(
+                samplerate=16000,
+                blocksize=8000,
+                dtype="int16",
+                channels=1,
+                callback=self.callback
+            ):
+                while True:
+                    try:
+                        data = self.q.get(timeout=0.1)
+
+                        if self.rec.AcceptWaveform(data):
+                            result = json.loads(self.rec.Result())
+                            text = result.get("text", "")
+                            if text:
+                                self.hide_listening()
+                                self.current_paragraph += text + " "
+                                print(text + " ", end="", flush=True)
+                                self.last_speech_time = time.time()
+                        else:
+                            partial = json.loads(self.rec.PartialResult()).get("partial", "")
+                            if partial:
+                                self.hide_listening()
+                                self.last_speech_time = time.time()
+
+                    except queue.Empty:
+                        pass
+
+                    # Check for 4 seconds of silence
+                    if self.current_paragraph and (time.time() - self.last_speech_time > 4.0):
+                        self.save_transcription()
+                        print()  # New line for the new paragraph
+                        self.show_listening()
+                        self.last_speech_time = time.time()
+
+        except KeyboardInterrupt:
+            print("\nArrêt de l'écoute. Sauvegarde en cours...")
+            self.save_transcription(final=True)
 
 
 class TextToSpeech:
