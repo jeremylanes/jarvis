@@ -1,10 +1,14 @@
 import json
+import logging
 import queue
 import time
 from pathlib import Path
 
 import sounddevice as sd
 from vosk import KaldiRecognizer, Model
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 # Robust path resolution
 BASE_DIR = Path(__file__).resolve().parent
@@ -57,28 +61,43 @@ class SpeechToText:
                 while True:
                     try:
                         data = self.q.get(timeout=0.1)
+                        # logger.debug(f'DATA - {data}')
 
                         if self.rec.AcceptWaveform(data):
+                            logger.debug('WAVEFORM ACCEPTED')
+
                             result = json.loads(self.rec.Result())
                             text = result.get("text", "")
                             if text:
+                                logger.debug(f'TEXT FOUND - {text}')
+
                                 self.hide_listening()
                                 self.current_paragraph += text + " "
                                 print(text + " ", end="", flush=True)
                                 self.last_speech_time = time.time()
                         else:
+                            logger.debug('WAVEFORM NOT ACCEPTED')
+
                             partial = json.loads(self.rec.PartialResult()).get("partial", "")
+                            logger.debug(f'PARTIAL - {partial}')
+
                             if partial:
+                                logger.debug(f'PARTIAL TEXT FOUND - {partial}')
+
                                 self.hide_listening()
                                 self.last_speech_time = time.time()
 
                     except queue.Empty:
+                        # logger.debug(f'QUEUE EMPTY')
                         pass
 
                     # Check for 4 seconds of silence
-                    if self.current_paragraph and (time.time() - self.last_speech_time > 4.0):
+                    if self.current_paragraph and (time.time() - self.last_speech_time > 3.0):
+                        logger.debug('SILENCE > 3s')
+
                         self.save_transcription()
                         print()  # New line for the new paragraph
+
                         self.show_listening()
                         self.last_speech_time = time.time()
 
