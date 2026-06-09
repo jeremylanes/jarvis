@@ -101,7 +101,7 @@ class SpeechToText:
                         self.last_speech_time = time.time()
 
         except KeyboardInterrupt:
-            print("\nArrêt de l'écoute. Sauvegarde en cours...")
+            print("\nStopping listening. Saving in progress...")
             self.save_transcription(final=True)
 
 
@@ -119,14 +119,14 @@ if __name__ == "__main__":
     from vosk import SetLogLevel
 
     parser = argparse.ArgumentParser(description="Speech to Text")
-    parser.add_argument("--prod", action="store_true", help="Lancer en mode production (désactive les logs)")
+    parser.add_argument("--prod", action="store_true", help="Run in production mode (disables logs)")
     args = parser.parse_args()
 
-    # Configuration des logs Python
+    # Python logs configuration
     log_level = logging.WARNING if args.prod else logging.DEBUG
     logging.basicConfig(level=log_level, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-    # Configuration des logs C++ de Vosk
+    # Vosk C++ logs configuration
     if args.prod:
         SetLogLevel(-1)
 
