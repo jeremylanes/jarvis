@@ -21,16 +21,19 @@ BASE_DIR = Path(__file__).resolve().parent
 MODEL_PATH = BASE_DIR / "model/vosk-model-small-fr-0.22"
 
 
+@dataclass
 class SpeechToText:
-    def __init__(self):
-        self.q = queue.Queue()
-        self.model = Model(str(MODEL_PATH))
+    q: queue.Queue = field(default_factory=queue.Queue)
+    model: Model = field(default_factory=lambda: Model(str(MODEL_PATH)))
+    rec: KaldiRecognizer = field(init=False)
+    accumulated_text: list = field(default_factory=list)
+    current_paragraph: str = ""
+    last_speech_time: float = field(default_factory=time.time)
+    is_listening_msg_visible: bool = False
+    json_path: Path = field(default_factory=lambda: BASE_DIR / "transcription.json")
+
+    def __post_init__(self):
         self.rec = KaldiRecognizer(self.model, 16000)
-        self.accumulated_text = []
-        self.current_paragraph = ""
-        self.last_speech_time = time.time()
-        self.is_listening_msg_visible = False
-        self.json_path = BASE_DIR / "transcription.json"
 
     def callback(self, indata, frames, time_info, status):
         self.q.put(bytes(indata))
