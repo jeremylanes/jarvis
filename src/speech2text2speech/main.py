@@ -2,6 +2,7 @@ import io
 import json
 import logging
 import queue
+import threading
 import time
 import wave
 from pathlib import Path
@@ -119,6 +120,18 @@ class TextToSpeech:
             self.voice.synthesize_wav(text, wav_file)
         buf.seek(0)
         data, sr = sf.read(buf, dtype="float32")
+
+        words = text.split()
+        duration = len(data) / sr
+        delay = duration / len(words)
+
+        def stream_words():
+            for word in words:
+                print(word, end=" ", flush=True)
+                time.sleep(delay)
+            print()
+
+        threading.Thread(target=stream_words, daemon=True).start()
         sd.play(data, sr)
         sd.wait()
 
