@@ -3,3 +3,5 @@ vosk
 sounddevice
 piper-tts
 soundfile
+PySide6
+numpy

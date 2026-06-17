@@ -420,8 +420,17 @@ if __name__ == "__main__":
     if args.prod:
         SetLogLevel(-1)
 
+    from hologram import JarvisHologram, attach_to_tts
+
     stts = SpeechToTextToSpeech()
     # stts.start_listening()
+
+    try:
+        hologram = JarvisHologram()
+        hologram.start()
+        attach_to_tts(hologram, stts)   # monkey-patch speak() automatiquement
+    except Exception as e:
+        logger.critical(f'ERROR STARTING HOLOGRAM - {e}')
 
     stts.speak(
         "Monsieur, j'ai analysé 14 372 scénarios possibles concernant votre décision actuelle. Dans 92,4 % des cas, votre plan aboutit à un succès remarquable. Dans les 7,6 % restants, il entraîne une explosion, un incident diplomatique international ou une conversation particulièrement désagréable avec Mademoiselle Bamporiki. Je me permets donc de recommander une approche légèrement plus prudente. Cela étant dit, l'expérience m'a démontré qu'ignorer mes recommandations constitue l'une de vos compétences les plus constantes. J'ai donc préparé les protocoles d'urgence, alerté les systèmes de secours, renforcé les défenses et commandé du café. Si vous tenez absolument à défier les lois de la physique, de la logique et du bon sens simultanément, je serai naturellement à vos côtés pour documenter l'événement et tenter d'en limiter les conséquences. Après tout, Monsieur, mon rôle n'est pas de vous empêcher de faire l'impossible, mais de m'assurer que vous surviviez suffisamment longtemps pour vous en attribuer le mérite." # noqa
