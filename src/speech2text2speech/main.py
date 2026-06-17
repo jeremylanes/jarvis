@@ -1,10 +1,14 @@
+import io
 import json
 import logging
 import queue
 import time
+import wave
 from pathlib import Path
 
 import sounddevice as sd
+import soundfile as sf
+from piper.voice import PiperVoice
 from vosk import KaldiRecognizer, Model
 
 logger = logging.getLogger(__name__)
@@ -106,7 +110,17 @@ class SpeechToText:
 
 
 class TextToSpeech:
-    pass
+    def __init__(self, model_path: str = "model/piper/fr_FR-siwis-medium.onnx"):
+        self.voice = PiperVoice.load(model_path)
+
+    def speak(self, text: str):
+        buf = io.BytesIO()
+        with wave.open(buf, "wb") as wav_file:
+            self.voice.synthesize_wav(text, wav_file)
+        buf.seek(0)
+        data, sr = sf.read(buf, dtype="float32")
+        sd.play(data, sr)
+        sd.wait()
 
 
 class SpeechToTextToSpeech(SpeechToText, TextToSpeech):
@@ -131,4 +145,9 @@ if __name__ == "__main__":
         SetLogLevel(-1)
 
     stt = SpeechToTextToSpeech()
-    stt.start_listening()
+    # stt.start_listening()
+
+    tts = TextToSpeech()
+    tts.speak(
+        "Excellente observation, monsieur, si vous voulez changer de planète, il faudra améliorer les exzosystèmes."
+    )

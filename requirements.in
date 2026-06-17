@@ -1,3 +1,5 @@
 pre-commit
 vosk
 sounddevice
+piper-tts
+soundfile
