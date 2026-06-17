@@ -5,7 +5,9 @@ import queue
 import threading
 import time
 import wave
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import ClassVar
 
 import sounddevice as sd
 import soundfile as sf
@@ -110,11 +112,14 @@ class SpeechToText:
             self.save_transcription(final=True)
 
 
+@dataclass
 class TextToSpeech:
-    def __init__(self, model_path: str = "model/piper/fr_FR-siwis-medium.onnx"):
-        self.voice = PiperVoice.load(model_path)
+    MODEL_PATH: ClassVar[str] = "model/piper/fr_FR-upmc-medium.onnx"
+    voice: PiperVoice = field(default_factory=lambda: PiperVoice.load(TextToSpeech.MODEL_PATH))
 
     def speak(self, text: str):
+        logger.debug(f'VOICE TYPE - {type(self.voice)}')
+
         buf = io.BytesIO()
         with wave.open(buf, "wb") as wav_file:
             self.voice.synthesize_wav(text, wav_file)
@@ -162,5 +167,5 @@ if __name__ == "__main__":
 
     tts = TextToSpeech()
     tts.speak(
-        "Excellente observation, monsieur, si vous voulez changer de planète, il faudra améliorer les exzosystèmes."
+        "Monsieur, j'ai analysé 14 372 scénarios possibles concernant votre décision actuelle. Dans 92,4 % des cas, votre plan aboutit à un succès remarquable. Dans les 7,6 % restants, il entraîne une explosion, un incident diplomatique international ou une conversation particulièrement désagréable avec Mademoiselle Bamporiki. Je me permets donc de recommander une approche légèrement plus prudente. Cela étant dit, l'expérience m'a démontré qu'ignorer mes recommandations constitue l'une de vos compétences les plus constantes. J'ai donc préparé les protocoles d'urgence, alerté les systèmes de secours, renforcé les défenses et commandé du café. Si vous tenez absolument à défier les lois de la physique, de la logique et du bon sens simultanément, je serai naturellement à vos côtés pour documenter l'événement et tenter d'en limiter les conséquences. Après tout, Monsieur, mon rôle n'est pas de vous empêcher de faire l'impossible, mais de m'assurer que vous surviviez suffisamment longtemps pour vous en attribuer le mérite." # noqa
     )
