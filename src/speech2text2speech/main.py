@@ -117,8 +117,16 @@ class SpeechToText:
             :class:`vosk.KaldiRecognizer` requires a fully loaded
             :class:`vosk.Model` instance, which is only available after
             ``__init__`` has run, hence the use of ``__post_init__``.
+
+            Calls ``super().__post_init__()`` so that cooperative multiple
+            inheritance works correctly when :class:`SpeechToTextToSpeech`
+            inherits from both :class:`SpeechToText` and :class:`TextToSpeech`.
         """
         self.rec = KaldiRecognizer(self.model, 16000)
+        # Propagate __post_init__ along the MRO for cooperative multiple inheritance
+        # (required by SpeechToTextToSpeech which inherits from both dataclasses).
+        if hasattr(super(), '__post_init__'):
+            super().__post_init__()
 
     def callback(self, indata, frames, time_info, status):
         """
@@ -312,6 +320,17 @@ class TextToSpeech:
     MODEL_PATH: ClassVar[str] = "model/piper/fr_FR-upmc-medium.onnx"
     voice: PiperVoice = field(default_factory=lambda: PiperVoice.load(TextToSpeech.MODEL_PATH))
 
+    def __post_init__(self):
+        """
+            Cooperative ``__post_init__`` terminus for the MRO chain.
+
+            When :class:`SpeechToTextToSpeech` is instantiated Python traverses
+            the MRO calling ``__post_init__`` cooperatively.  This no-op
+            implementation ensures the chain ends cleanly without hitting
+            ``object``, which does not define ``__post_init__``.
+        """
+        # Terminus: do not call super().__post_init__() – object has no such method.
+
     def speak(self, text: str):
         """
             Synthesise *text* and play the result through the audio output.
@@ -357,6 +376,7 @@ class TextToSpeech:
         sd.wait()
 
 
+@dataclass
 class SpeechToTextToSpeech(SpeechToText, TextToSpeech):
     """
         Combined speech-to-text and text-to-speech pipeline.
@@ -400,10 +420,9 @@ if __name__ == "__main__":
     if args.prod:
         SetLogLevel(-1)
 
-    stt = SpeechToTextToSpeech()
-    # stt.start_listening()
+    stts = SpeechToTextToSpeech()
+    # stts.start_listening()
 
-    tts = TextToSpeech()
-    tts.speak(
+    stts.speak(
         "Monsieur, j'ai analysé 14 372 scénarios possibles concernant votre décision actuelle. Dans 92,4 % des cas, votre plan aboutit à un succès remarquable. Dans les 7,6 % restants, il entraîne une explosion, un incident diplomatique international ou une conversation particulièrement désagréable avec Mademoiselle Bamporiki. Je me permets donc de recommander une approche légèrement plus prudente. Cela étant dit, l'expérience m'a démontré qu'ignorer mes recommandations constitue l'une de vos compétences les plus constantes. J'ai donc préparé les protocoles d'urgence, alerté les systèmes de secours, renforcé les défenses et commandé du café. Si vous tenez absolument à défier les lois de la physique, de la logique et du bon sens simultanément, je serai naturellement à vos côtés pour documenter l'événement et tenter d'en limiter les conséquences. Après tout, Monsieur, mon rôle n'est pas de vous empêcher de faire l'impossible, mais de m'assurer que vous surviviez suffisamment longtemps pour vous en attribuer le mérite." # noqa
     )
