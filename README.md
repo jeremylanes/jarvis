@@ -103,10 +103,10 @@ jarvis/
 | Stage | Goal | Status |
 |-------|------|--------|
 | **1. Core Architecture** | Agent, memory, skill system | ✅ |
-| **2. Voice I/O Loop** | Speech recognition + synthesis | ⏳ |
+| **2. Voice I/O Loop** | Speech recognition + synthesis | ✅ |
 | **3. Personal Assistant Skills** | Notes, calendar, system control | ⏳ |
 | **4. Local Environment Control** | PC automation, Home Assistant API | ⏳ |
-| **5. Web/PWA Interface** | Live dashboard + mobile access | ⏳ |
+| **5. Web/PWA Interface** | Live dashboard + mobile access | ✅ |
 | **6. Persistent Long-Term Memory** | Vector database integration | ⏳ |
 
 ---
