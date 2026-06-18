@@ -48,48 +48,40 @@ FPS = 40
 
 def lerp(a: float, b: float, t: float) -> float:
     """
-        Linearly interpolate between two values.
+        Linearly interpolate between two float values.
 
-        Computes the linear interpolation formula: a + (b - a) * t, where t is clamped
-        between 0.0 and 1.0.
-
-        :param a: The start value.
+        :param a: Start value.
         :type a: float
-        :param b: The end value.
+        :param b: End value.
         :type b: float
-        :param t: The interpolation factor.
+        :param t: Interpolation factor.
         :type t: float
-        :return: The interpolated value.
+        :return: Interpolated float value.
         :rtype: float
 
         **Usage example**::
 
-            val = lerp(10.0, 20.0, 0.5)
-            # Returns 15.0
+            res = lerp(0.0, 10.0, 0.5)
     """
     return a + (b - a) * max(0.0, min(1.0, t))
 
 
 def lc(c1: QColor, c2: QColor, t: float) -> QColor:
     """
-        Linearly interpolate between two QColor colors.
+        Linearly interpolate between two QColors.
 
-        Clamps the interpolation factor between 0.0 and 1.0, then interpolates red,
-        green, blue, and alpha channels individually.
-
-        :param c1: The start color.
+        :param c1: Start color.
         :type c1: PySide6.QtGui.QColor
-        :param c2: The end color.
+        :param c2: End color.
         :type c2: PySide6.QtGui.QColor
-        :param t: The interpolation factor.
+        :param t: Interpolation factor.
         :type t: float
-        :return: The interpolated color.
+        :return: Interpolated QColor.
         :rtype: PySide6.QtGui.QColor
 
         **Usage example**::
 
-            from PySide6.QtGui import QColor
-            color = lc(QColor(255, 0, 0), QColor(0, 0, 255), 0.5)
+            res = lc(QColor(0,0,0), QColor(255,255,255), 0.5)
     """
     t = max(0.0, min(1.0, t))
     return QColor(
@@ -103,12 +95,9 @@ def lc(c1: QColor, c2: QColor, t: float) -> QColor:
 # ── Thread-safe Signals ────────────────────────────────────────────────────────
 class _Bridge(QObject):
     """
-        Signal bridge to invoke Qt slots from non-Qt threads.
+        Signal bridge for thread-safe UI closure.
 
-        Provides custom Qt signals that can be connected to slots inside the
-        main GUI thread, enabling thread-safe UI operations from background threads.
-
-        :cvar do_close: Signal emitted to trigger widget closure.
+        :cvar do_close: Signal to request closing the widget.
         :type do_close: PySide6.QtCore.Signal
 
         **Usage example**::
@@ -123,77 +112,65 @@ class _Bridge(QObject):
 # ── Widget ─────────────────────────────────────────────────────────────────────
 class JarvisWidget(QWidget):
     """
-        Floating PySide6 widget rendering the animated holographic interface.
+        Floating PySide6 widget rendering the Jarvis hologram.
 
-        A borderless, translucent, always-on-top window positioned at the
-        top-right of the primary screen. Draws dynamic 3D-like rotating rings,
-        holographic circuit-board arcs, and a pulsing energy core matching speech amplitude.
+        A frameless, translucent, always-on-top window displaying animated
+        3D rings, circuit-board arcs, and a pulsing energy core.
 
-        :param _t: Total elapsed time in seconds for oscillation math.
+        :param _t: Total elapsed time in seconds.
         :type _t: float
         :param _energy: Smoothly interpolated speech energy.
         :type _energy: float
         :param _amp: Current raw sound amplitude.
         :type _amp: float
-        :param _speaking: Whether the assistant is currently speaking.
+        :param _speaking: Speaks state indicator.
         :type _speaking: bool
-        :param _lock: Thread-safe lock protecting audio amplitude state.
+        :param _lock: Thread lock protecting amplitude.
         :type _lock: threading.Lock
-        :param _rings: Configured holographic rings with speed and tilt attributes.
+        :param _rings: Configured holographic rings data.
         :type _rings: list
-        :param _ring_radii: Radii of the three main holographic rings.
+        :param _ring_radii: Concentric radii for rings.
         :type _ring_radii: list
-        :param _arcs: Randomly generated circuit board arcs.
+        :param _arcs: Procedural circuit board paths.
         :type _arcs: list
-        :param _arc_regen_t: Time counter to control the periodic regeneration of arcs.
+        :param _arc_regen_t: Arc regeneration countdown.
         :type _arc_regen_t: float
-        :param _bridge: Signal bridge for thread-safe cross-thread UI controls.
+        :param _bridge: Thread-safe signal bridge.
         :type _bridge: _Bridge
-        :param _timer: Main animation timer driving the rendering updates.
+        :param _timer: Animation frame timer.
         :type _timer: PySide6.QtCore.QTimer
 
         **Usage example**::
 
-            import sys
-            from PySide6.QtWidgets import QApplication
-            app = QApplication(sys.argv)
             widget = JarvisWidget()
             widget.show()
     """
 
     def __init__(self):
         """
-            Initialize the widget, flags, positioning, and animation components.
-
-            Sets frameless window flags, translucency, retrieves primary screen
-            geometry to position the widget in the top-right corner, initializes
-            holographic rings and arcs, sets up the cross-thread signal bridge,
-            and starts the main GUI update timer at the defined FPS rate.
+            Initialize UI window flags, geometry, and animation elements.
 
             **Usage example**::
 
-                # Instantiated inside the main loop or JarvisHologram
                 widget = JarvisWidget()
         """
         super().__init__()
 
-        # ── Window: frameless, always-on-top, not in taskbar
+        # Window: frameless, always-on-top, not in taskbar
         flags = (
             Qt.FramelessWindowHint
             | Qt.WindowStaysOnTopHint
             | Qt.Tool
-            | Qt.X11BypassWindowManagerHint   # KDE/X11: force foreground
+            | Qt.X11BypassWindowManagerHint
         )
         self.setWindowFlags(flags)
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setAttribute(Qt.WA_NoSystemBackground)
-        self.setFocusPolicy(Qt.NoFocus)       # does not steal focus
+        self.setFocusPolicy(Qt.NoFocus)
         self.resize(W, H)
 
-        # ── Positioning in the top-right corner
         self._position_top_right()
 
-        # ── Animation state
         self._t = 0.0
         self._energy = 0.0
         self._amp = 0.0
@@ -202,31 +179,25 @@ class JarvisWidget(QWidget):
 
         # Rings: [angle, speed_idle, speed_mult, reverse, tilt_y_ratio]
         self._rings = [
-            [0.0, 0.20, 5.0, False, 0.38],   # almost circular
-            [0.0, 0.35, 6.5, True, 0.18],   # very tilted
-            [0.0, 0.15, 4.0, False, 0.52],   # wide, less tilted
+            [0.0, 0.20, 5.0, False, 0.38],
+            [0.0, 0.35, 6.5, True, 0.18],
+            [0.0, 0.15, 4.0, False, 0.52],
         ]
         self._ring_radii = [155, 168, 182]
 
-        # Printed circuit board arcs
         self._arcs = self._gen_arcs(22)
         self._arc_regen_t = 0.0
 
-        # ── Bridge for thread-safe stop
         self._bridge = _Bridge()
         self._bridge.do_close.connect(self._on_close)
 
-        # ── Timer in the Qt thread
         self._timer = QTimer(self)
         self._timer.timeout.connect(self._tick)
         self._timer.start(1000 // FPS)
 
     def _position_top_right(self):
         """
-            Position the widget at the top-right corner of the primary screen.
-
-            Retrieves the available screen geometry and moves the widget,
-            applying a margin.
+            Move widget to the top-right corner of the screen.
 
             **Usage example**::
 
@@ -237,31 +208,25 @@ class JarvisWidget(QWidget):
         margin = 12
         self.move(geom.right() - W - margin, geom.top() + margin)
 
-    # ── Thread-safe API ────────────────────────────────────────────────────────
     def push_amplitude(self, rms: float):
         """
-            Update the audio amplitude in a thread-safe manner.
+            Update audio RMS amplitude in a thread-safe way.
 
-            Clamps the value between 0.0 and 1.0 and saves it to the internal
-            amplitude state.
-
-            :param rms: The Root Mean Square value of the current audio chunk.
+            :param rms: Audio RMS value.
             :type rms: float
 
             **Usage example**::
 
-                widget.push_amplitude(0.05)
+                widget.push_amplitude(0.15)
         """
         with self._lock:
             self._amp = max(0.0, min(1.0, rms))
 
     def set_speaking(self, v: bool):
         """
-            Set the speaking state of the widget in a thread-safe manner.
+            Update speaking state in a thread-safe way.
 
-            Controls whether the hologram animates in idle or speaking mode.
-
-            :param v: True if speaking, False otherwise.
+            :param v: True if speaking.
             :type v: bool
 
             **Usage example**::
@@ -273,10 +238,7 @@ class JarvisWidget(QWidget):
 
     def request_close(self):
         """
-            Request the widget to close from any thread.
-
-            Emits the `do_close` signal via the bridge to safely close the widget
-            within the Qt main event loop.
+            Emit close request signal from any thread.
 
             **Usage example**::
 
@@ -287,9 +249,7 @@ class JarvisWidget(QWidget):
     @Slot()
     def _on_close(self):
         """
-            Handle widget closure within the main Qt thread.
-
-            Stops the animation timer and closes the window.
+            Terminate timer and close QWidget (runs on main thread).
 
             **Usage example**::
 
@@ -298,22 +258,18 @@ class JarvisWidget(QWidget):
         self._timer.stop()
         self.close()
 
-    # ── Arc Generation ─────────────────────────────────────────────────────────
     def _gen_arcs(self, n: int = 22) -> list:
         """
-            Generate random holographic circuit board arcs.
+            Generate a set of randomized circuit paths.
 
-            Creates coordinates and parameters for circuit-like geometric shapes
-            with custom speed, transparency, and line width.
-
-            :param n: Number of arcs to generate.
+            :param n: Number of arcs to create.
             :type n: int
-            :return: A list of generated arc dictionaries.
+            :return: Generated arcs dataset.
             :rtype: list
 
             **Usage example**::
 
-                arcs = widget._gen_arcs(10)
+                arcs = widget._gen_arcs(15)
         """
         arcs = []
         r = random.Random(int(time.time() * 100) % 99999)
@@ -337,18 +293,13 @@ class JarvisWidget(QWidget):
             })
         return arcs
 
-    # ── Tick ───────────────────────────────────────────────────────────────────
     def _tick(self):
         """
-            Update animation variables and trigger a repaint.
-
-            Computes elapsed time, updates rotating ring angles based on current energy,
-            smoothly interpolates energy targets, and regenerates expired arcs.
-            Also ensures the window stays on top of other windows.
+            Perform animation updates and request repaint.
 
             **Usage example**::
 
-                # Automatically called by the QTimer; not called directly.
+                # Automatically scheduled by QTimer
                 widget._tick()
         """
         dt = 1.0 / FPS
@@ -378,29 +329,23 @@ class JarvisWidget(QWidget):
             for j, idx in enumerate(idxs):
                 self._arcs[idx] = new[j % len(new)]
 
-        # Always stay on top (KDE Wayland might forget it)
         self.raise_()
         self.update()
 
-    # ── Paint ──────────────────────────────────────────────────────────────────
     def paintEvent(self, _):
         """
-            Qt paint event handler to draw the hologram.
+            Handle custom widget painting using QPainter.
 
-            Clears the canvas and renders the outer glow, circuit board arcs,
-            3D rotating rings, central core, and bottom text label.
-
-            :param _: The paint event object (unused).
+            :param _: Paint event object.
             :type _: PySide6.QtGui.QPaintEvent
 
             **Usage example**::
 
-                # Triggered by calling update(); not called directly.
+                # Scheduled via update()
                 widget.update()
         """
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
-
         p.setCompositionMode(QPainter.CompositionMode_Source)
         p.fillRect(self.rect(), Qt.transparent)
         p.setCompositionMode(QPainter.CompositionMode_SourceOver)
@@ -410,39 +355,10 @@ class JarvisWidget(QWidget):
         cx = W // 2
         cy = H // 2
 
-        self._draw_glow(p, cx, cy, e)
-        self._draw_arcs(p, cx, cy, e, t)
-        self._draw_rings(p, cx, cy, e)
-        self._draw_core(p, cx, cy, e, t)
-        self._draw_label(p, e)
-        p.end()
-
-    # ── Spherical Glow ─────────────────────────────────────────────────────────
-    def _draw_glow(self, p: QPainter, cx: float, cy: float, e: float):
-        """
-            Draw the outer radial glow and interior veins.
-
-            Renders a diffuse outer halo, a glowing main body, and small glowing
-            surface veins using radial gradients.
-
-            :param p: The active painter.
-            :type p: PySide6.QtGui.QPainter
-            :param cx: Center X coordinate.
-            :type cx: float
-            :param cy: Center Y coordinate.
-            :type cy: float
-            :param e: Current energy value.
-            :type e: float
-
-            **Usage example**::
-
-                # Called inside paintEvent.
-                widget._draw_glow(painter, 210, 210, 0.5)
-        """
+        # 1. Outer Spherical Glow
         boost = 1 + e * 0.20
         r = SPHERE_R * boost
 
-        # Very diffuse outer halo
         g = QRadialGradient(cx, cy, r * 1.35)
         g.setColorAt(0.00, QColor(100, 28, 0, int(50 + e * 90)))
         g.setColorAt(0.45, QColor(60, 12, 0, int(25 + e * 55)))
@@ -452,7 +368,6 @@ class JarvisWidget(QWidget):
         rr = r * 1.35
         p.drawEllipse(QRectF(cx - rr, cy - rr, rr * 2, rr * 2))
 
-        # Main body
         g2 = QRadialGradient(cx, cy, r)
         g2.setColorAt(0.00, QColor(
             min(255, int(200 + e * 55)), min(255, int(95 + e * 70)), int(8 + e * 18), int(210 + e * 45)
@@ -463,10 +378,10 @@ class JarvisWidget(QWidget):
         p.setBrush(QBrush(g2))
         p.drawEllipse(QRectF(cx - r, cy - r, r * 2, r * 2))
 
-        # Surface veins (animated internal arcs)
-        n = 6 + int(e * 8)
-        for i in range(n):
-            ph = self._t * 0.55 + i * (math.pi * 2 / n)
+        # Surface veins
+        n_veins = 6 + int(e * 8)
+        for i in range(n_veins):
+            ph = t * 0.55 + i * (math.pi * 2 / n_veins)
             vr = 30 + math.sin(ph * 1.3 + i) * 25
             va = math.degrees(ph) % 360
             ext = 35 + math.sin(ph * 2.2) * 18
@@ -476,33 +391,9 @@ class JarvisWidget(QWidget):
             pen.setCapStyle(Qt.RoundCap)
             p.setPen(pen)
             p.setBrush(Qt.NoBrush)
-            p.drawArc(QRectF(cx - vr, cy - vr, vr * 2, vr * 2),
-                      int(va * 16), int(ext * 16))
+            p.drawArc(QRectF(cx - vr, cy - vr, vr * 2, vr * 2), int(va * 16), int(ext * 16))
 
-    # ── PCB Arcs ───────────────────────────────────────────────────────────────
-    def _draw_arcs(self, p: QPainter, cx: float, cy: float, e: float, t: float):
-        """
-            Draw the circuit board arcs and connection nodes.
-
-            Renders segmented paths with node indicators at vertex positions,
-            applying alpha oscillation based on phase and current speech energy.
-
-            :param p: The active painter.
-            :type p: PySide6.QtGui.QPainter
-            :param cx: Center X coordinate.
-            :type cx: float
-            :param cy: Center Y coordinate.
-            :type cy: float
-            :param e: Current energy value.
-            :type e: float
-            :param t: Elapsed time in seconds.
-            :type t: float
-
-            **Usage example**::
-
-                # Called inside paintEvent.
-                widget._draw_arcs(painter, 210, 210, 0.5, 1.2)
-        """
+        # 2. PCB Arcs
         p.setBrush(Qt.NoBrush)
         for arc in self._arcs:
             ph = arc['phase'] + t * arc['speed']
@@ -544,35 +435,13 @@ class JarvisWidget(QWidget):
                 p.drawEllipse(pt, nr, nr)
             p.setBrush(Qt.NoBrush)
 
-    # ── 3D Rings ───────────────────────────────────────────────────────────────
-    def _draw_rings(self, p: QPainter, cx: float, cy: float, e: float):
-        """
-            Draw the 3D tilted concentric rings.
-
-            Simulates perspective tilt by drawing ellipses with depth-based shading,
-            brighter on the closer side, and adding ticks along the rings.
-
-            :param p: The active painter.
-            :type p: PySide6.QtGui.QPainter
-            :param cx: Center X coordinate.
-            :type cx: float
-            :param cy: Center Y coordinate.
-            :type cy: float
-            :param e: Current energy value.
-            :type e: float
-
-            **Usage example**::
-
-                # Called inside paintEvent.
-                widget._draw_rings(painter, 210, 210, 0.5)
-        """
+        # 3. 3D Concentric Rings
         p.setBrush(Qt.NoBrush)
-
         dash_configs = [(10, 14), (8, 10), (6, 8)]
 
         for i, ring in enumerate(self._rings):
             rx = self._ring_radii[i]
-            ry = rx * ring[4]          # tilt_y_ratio → flattening
+            ry = rx * ring[4]
             angle = ring[0]
             dash_on, dash_off = dash_configs[i]
             cycle = dash_on + dash_off
@@ -588,10 +457,8 @@ class JarvisWidget(QWidget):
                 a_start = (start + angle) % 360
                 span = dash_on
 
-                # Depth = Y position on the ellipse
                 mid_deg = (a_start + span / 2) % 360
                 mid_rad = math.radians(mid_deg)
-                # Positive sine = bottom = "front" (perspective convention)
                 depth = 0.5 + 0.5 * math.sin(mid_rad)
 
                 col = lc(col_lo, col_hi, depth * bright)
@@ -618,33 +485,9 @@ class JarvisWidget(QWidget):
                 depth = 0.5 + 0.5 * math.sin(rad)
                 tc = lc(col_lo, col_hi, depth)
                 p.setPen(QPen(tc, 1.0))
-                p.drawLine(QPointF(ex, ey),
-                           QPointF(ex + dx / ln * tl, ey + dy / ln * tl))
+                p.drawLine(QPointF(ex, ey), QPointF(ex + dx / ln * tl, ey + dy / ln * tl))
 
-    # ── Core ───────────────────────────────────────────────────────────────────
-    def _draw_core(self, p: QPainter, cx: float, cy: float, e: float, t: float):
-        """
-            Draw the pulsing central energy core.
-
-            Layers multiple soft glowing circles with high opacity at the center,
-            using a sine wave to create a continuous pulsing effect.
-
-            :param p: The active painter.
-            :type p: PySide6.QtGui.QPainter
-            :param cx: Center X coordinate.
-            :type cx: float
-            :param cy: Center Y coordinate.
-            :type cy: float
-            :param e: Current energy value.
-            :type e: float
-            :param t: Elapsed time in seconds.
-            :type t: float
-
-            **Usage example**::
-
-                # Called inside paintEvent.
-                widget._draw_core(painter, 210, 210, 0.5, 1.2)
-        """
+        # 4. Central Pulse Core
         pulse = 0.5 + 0.5 * math.sin(t * 7.5)
         ep = min(1.0, e + pulse * 0.07)
 
@@ -671,57 +514,38 @@ class JarvisWidget(QWidget):
         p.setBrush(Qt.NoBrush)
         p.drawEllipse(QRectF(cx - hr, cy - hr, hr * 2, hr * 2))
 
-    # ── Label ──────────────────────────────────────────────────────────────────
-    def _draw_label(self, p: QPainter, e: float):
-        """
-            Draw the bottom "J . A . R . V . I . S ." text.
-
-            Positions the text at the bottom of the widget container, adjusting
-            opacity based on speech energy.
-
-            :param p: The active painter.
-            :type p: PySide6.QtGui.QPainter
-            :param e: Current energy value.
-            :type e: float
-
-            **Usage example**::
-
-                # Called inside paintEvent.
-                widget._draw_label(painter, 0.5)
-        """
+        # 5. Label
         a = int((0.28 + e * 0.60) * 255)
         col = QColor(255, int(75 + e * 85), 0, a)
         p.setPen(col)
         p.setFont(QFont("Courier", 8, QFont.Bold))
-        p.drawText(QRectF(0, H - 24, W, 18), Qt.AlignHCenter,
-                   "J . A . R . V . I . S .")
+        p.drawText(QRectF(0, H - 24, W, 18), Qt.AlignHCenter, "J . A . R . V . I . S .")
+
+        p.end()
 
 
 # ── Controller ─────────────────────────────────────────────────────────────────
 @dataclass
 class JarvisHologram:
     """
-        Thread-safe controller for managing the Jarvis widget life cycle.
+        Controller managing the JarvisWidget life cycle.
 
-        Launches the PySide6 application loop in a dedicated background daemon
-        thread and exposes public methods to modify the widget's speech state
-        and audio amplitude safely from other threads.
+        Launches the Qt event loop in a background thread and delegates
+        speaking states and sound amplitudes to the widget.
 
-        :param _widget: The active widget instance.
+        :param _widget: Underlying Qt Widget instance.
         :type _widget: JarvisWidget
-        :param _app: The active PySide6 application.
+        :param _app: PySide6 application singleton.
         :type _app: PySide6.QtWidgets.QApplication
-        :param _thread: The background thread running the Qt event loop.
+        :param _thread: Background execution thread.
         :type _thread: threading.Thread
-        :param _ready: Threading event indicating the widget has finished initialization.
+        :param _ready: Threading sync barrier.
         :type _ready: threading.Event
 
         **Usage example**::
 
-            hologram = JarvisHologram()
-            hologram.start()
-            hologram.set_speaking(True)
-            hologram.stop()
+            h = JarvisHologram()
+            h.start()
     """
 
     _widget: object = field(default=None, init=False)
@@ -731,28 +555,22 @@ class JarvisHologram:
 
     def __post_init__(self):
         """
-            Initialize threading events.
-
-            Sets up the ready synchronization event before starting any background threads.
+            Setup thread synchronization structures.
 
             **Usage example**::
 
-                # Automatically called on instantiation.
+                # Implicitly called
                 h = JarvisHologram()
         """
         self._ready = threading.Event()
 
     def start(self):
         """
-            Start the Qt application thread and wait for initialization.
-
-            Creates a daemon thread running the Qt event loop and blocks the current
-            thread for up to 5 seconds until the widget is fully showing.
+            Start background thread and wait for widget readiness.
 
             **Usage example**::
 
-                hologram = JarvisHologram()
-                hologram.start()
+                h.start()
         """
         self._thread = threading.Thread(target=self._run_qt, daemon=True)
         self._thread.start()
@@ -760,59 +578,51 @@ class JarvisHologram:
 
     def stop(self):
         """
-            Safely terminate the Qt application and close the widget.
-
-            Requests closure through the widget's thread-safe signal bridge.
+            Safely close widget and terminate application.
 
             **Usage example**::
 
-                hologram.stop()
+                h.stop()
         """
         if self._widget:
-            self._widget.request_close()   # thread-safe via Signal
+            self._widget.request_close()
 
     def set_speaking(self, v: bool):
         """
-            Set the widget's speaking state.
+            Proxy speaking state update to the widget.
 
-            Proxies the call to the widget if it has been initialized.
-
-            :param v: True if speaking, False otherwise.
+            :param v: True if speaking.
             :type v: bool
 
             **Usage example**::
 
-                hologram.set_speaking(True)
+                h.set_speaking(True)
         """
         if self._widget:
             self._widget.set_speaking(v)
 
     def push_amplitude(self, rms: float):
         """
-            Send the audio amplitude value to the widget.
+            Proxy audio amplitude updates to the widget.
 
-            Proxies the call to the widget if it has been initialized.
-
-            :param rms: Sound amplitude (Root Mean Square).
+            :param rms: Root Mean Square value.
             :type rms: float
 
             **Usage example**::
 
-                hologram.push_amplitude(0.12)
+                h.push_amplitude(0.25)
         """
         if self._widget:
             self._widget.push_amplitude(rms)
 
     def _run_qt(self):
         """
-            Instantiate the Qt application, show the widget, and enter the main event loop.
-
-            Runs in the background thread, sets up QApplication, and marks the ready event.
+            Start Qt Application loop in the background.
 
             **Usage example**::
 
-                # Called internally by start() within a thread.
-                hologram._run_qt()
+                # Executed in daemon thread
+                h._run_qt()
         """
         import sys
         self._app = QApplication.instance() or QApplication(sys.argv)
@@ -825,23 +635,16 @@ class JarvisHologram:
 # ── TTS Integration ────────────────────────────────────────────────────────────
 def attach_to_tts(hologram: JarvisHologram, tts_instance):
     """
-        Monkey-patch a TextToSpeech instance to synchronize it with the hologram.
+        Monkey-patch TextToSpeech speak loop to sync with hologram.
 
-        Replaces the instance's speak method with a custom implementation that
-        sends the audio's RMS amplitude values to the hologram while playing sound.
-
-        :param hologram: The hologram controller.
+        :param hologram: The target controller.
         :type hologram: JarvisHologram
-        :param tts_instance: The TextToSpeech instance to patch.
+        :param tts_instance: TextToSpeech pipeline instance.
         :type tts_instance: TextToSpeech
 
         **Usage example**::
 
-            hologram = JarvisHologram()
-            hologram.start()
-            tts = TextToSpeech()
             attach_to_tts(hologram, tts)
-            tts.speak("Hello, sir.")
     """
     def _patched_speak(text: str):
         hologram.set_speaking(True)
