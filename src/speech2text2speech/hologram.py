@@ -161,7 +161,6 @@ class JarvisWidget(QWidget):
             Qt.FramelessWindowHint
             | Qt.WindowStaysOnTopHint
             | Qt.Tool
-            | Qt.WindowDoesNotAcceptFocus
             | Qt.X11BypassWindowManagerHint
         )
         self.setWindowFlags(flags)
@@ -177,6 +176,7 @@ class JarvisWidget(QWidget):
         self._amp = 0.0
         self._speaking = False
         self._lock = threading.Lock()
+        self._drag_pos = None
 
         # Rings: [angle, speed_idle, speed_mult, reverse, tilt_y_ratio]
         self._rings = [
@@ -262,6 +262,36 @@ class JarvisWidget(QWidget):
         self._timer.stop()
         self.close()
 
+    def mousePressEvent(self, event):
+        """
+            Handle mouse press to initiate dragging.
+
+            :param event: The mouse event.
+            :type event: PySide6.QtGui.QMouseEvent
+
+            **Usage example**::
+
+                # Called automatically by Qt
+        """
+        if event.button() == Qt.LeftButton:
+            self._drag_pos = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
+            event.accept()
+
+    def mouseMoveEvent(self, event):
+        """
+            Handle mouse move for dragging the window.
+
+            :param event: The mouse event.
+            :type event: PySide6.QtGui.QMouseEvent
+
+            **Usage example**::
+
+                # Called automatically by Qt
+        """
+        if event.buttons() == Qt.LeftButton and self._drag_pos is not None:
+            self.move(event.globalPosition().toPoint() - self._drag_pos)
+            event.accept()
+
     def _gen_arcs(self, n: int = 22) -> list:
         """
             Generate a set of randomized circuit paths.
@@ -333,7 +363,6 @@ class JarvisWidget(QWidget):
             for j, idx in enumerate(idxs):
                 self._arcs[idx] = new[j % len(new)]
 
-        self._position_top_right()
         self.raise_()
         self.update()
 
