@@ -683,6 +683,7 @@ def attach_to_tts(hologram: JarvisHologram, tts_instance):
             attach_to_tts(hologram, tts)
     """
     def _patched_speak(text: str):
+        tts_instance._interrupt_speak = False
         hologram.set_speaking(True)
         try:
             buf = io.BytesIO()
@@ -698,21 +699,25 @@ def attach_to_tts(hologram: JarvisHologram, tts_instance):
 
             def _words():
                 for w in words:
+                    if getattr(tts_instance, "_interrupt_speak", False):
+                        break
                     print(w, end=" ", flush=True)
                     time.sleep(delay)
-                print()
+                if not getattr(tts_instance, "_interrupt_speak", False):
+                    print()
             threading.Thread(target=_words, daemon=True).start()
 
             sd.play(data, sr)
             idx = 0
-            while idx < len(data):
+            while idx < len(data) and not getattr(tts_instance, "_interrupt_speak", False):
                 chunk = data[idx:idx + block]
                 if len(chunk):
                     rms = float(np.sqrt(np.mean(chunk ** 2)))
                     hologram.push_amplitude(min(1.0, rms / 0.12))
                 idx += block
                 time.sleep(1.0 / FPS)
-            sd.wait()
+            sd.stop()
+            tts_instance._interrupt_speak = True
         finally:
             hologram.set_speaking(False)
 
