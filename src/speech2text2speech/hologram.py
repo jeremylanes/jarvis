@@ -161,6 +161,7 @@ class JarvisWidget(QWidget):
             Qt.FramelessWindowHint
             | Qt.WindowStaysOnTopHint
             | Qt.Tool
+            | Qt.WindowDoesNotAcceptFocus
             | Qt.X11BypassWindowManagerHint
         )
         self.setWindowFlags(flags)
@@ -206,7 +207,10 @@ class JarvisWidget(QWidget):
         screen: QScreen = QApplication.primaryScreen()
         geom = screen.availableGeometry()
         margin = 12
-        self.move(geom.right() - W - margin, geom.top() + margin)
+        tx = geom.right() - W - margin
+        ty = geom.top() + margin
+        if self.x() != tx or self.y() != ty:
+            self.move(tx, ty)
 
     def push_amplitude(self, rms: float):
         """
@@ -329,6 +333,7 @@ class JarvisWidget(QWidget):
             for j, idx in enumerate(idxs):
                 self._arcs[idx] = new[j % len(new)]
 
+        self._position_top_right()
         self.raise_()
         self.update()
 
@@ -624,7 +629,9 @@ class JarvisHologram:
                 # Executed in daemon thread
                 h._run_qt()
         """
+        import os
         import sys
+        os.environ["QT_QPA_PLATFORM"] = "xcb"
         self._app = QApplication.instance() or QApplication(sys.argv)
         self._widget = JarvisWidget()
         self._widget.show()
