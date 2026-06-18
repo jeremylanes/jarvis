@@ -277,9 +277,10 @@ class SpeechToText:
                             if partial:
                                 logger.debug(f'PARTIAL TEXT FOUND - {partial}')
 
-                                self.is_user_speaking = True
-                                if hasattr(self, "interrupt"):
-                                    self.interrupt()
+                                if len(partial.strip()) > 2:
+                                    self.is_user_speaking = True
+                                    if hasattr(self, "interrupt"):
+                                        self.interrupt()
 
                                 self.hide_listening()
                                 self.last_speech_time = time.time()
@@ -326,7 +327,8 @@ class TextToSpeech:
             tts.speak("Hello, I am your voice assistant.")
     """
 
-    MODEL_PATH: ClassVar[str] = "model/piper/fr_FR-upmc-medium.onnx"
+    MODEL_PATH: ClassVar[str] = "model/piper/fr_FR-siwis-medium.onnx"
+    # MODEL_PATH: ClassVar[str] = "model/piper/fr_FR-upmc-medium.onnx"
     voice: PiperVoice = field(default_factory=lambda: PiperVoice.load(TextToSpeech.MODEL_PATH))
 
     def __post_init__(self):
@@ -441,18 +443,18 @@ class SpeechToTextToSpeech(SpeechToText, TextToSpeech):
                 agent = SpeechToTextToSpeech()
                 agent.setup()
         """
-        import random
-
         with open(BASE_DIR / "replic.json", "r", encoding="utf-8") as f:
             replics = json.load(f)
 
         threading.Thread(target=self.start_listening, daemon=True).start()
 
         try:
+            idx = 0
             while True:
                 if not getattr(self, "is_user_speaking", False):
-                    replic = random.choice(replics)
+                    replic = replics[idx]
                     self.speak(replic)
+                    idx = (idx + 1) % len(replics)
                 time.sleep(1)
         except KeyboardInterrupt:
             print("\nStopping setup...")
