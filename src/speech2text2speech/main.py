@@ -327,8 +327,8 @@ class TextToSpeech:
             tts.speak("Hello, I am your voice assistant.")
     """
 
-    MODEL_PATH: ClassVar[str] = "model/piper/fr_FR-siwis-medium.onnx"
-    # MODEL_PATH: ClassVar[str] = "model/piper/fr_FR-upmc-medium.onnx"
+    # MODEL_PATH: ClassVar[str] = "model/piper/fr_FR-siwis-medium.onnx"
+    MODEL_PATH: ClassVar[str] = "model/piper/fr_FR-upmc-medium.onnx"
     voice: PiperVoice = field(default_factory=lambda: PiperVoice.load(TextToSpeech.MODEL_PATH))
 
     def __post_init__(self):
