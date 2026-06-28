@@ -4,5 +4,5 @@ if __name__ == "__main__":
     stt2tts = SpeechToTextToSpeech()
 
     print('starting....')
-    stt2tts.speak("Hello, world!")
+    stt2tts.speak("Génère un script Bash rapide pour vérifier l'espace disque et m'alerter si un dossier dépasse 80%.")
     print('done')
