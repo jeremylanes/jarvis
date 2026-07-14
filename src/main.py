@@ -1,15 +1,7 @@
-from datetime import datetime
-
 from langchain.agents import create_agent
-from langchain.tools import tool
 from langchain_ollama import ChatOllama
 
-
-@tool
-def current_time() -> str:
-    """Return the current local date and time."""
-    return datetime.now().isoformat(timespec="seconds")
-
+from tools import current_time
 
 llm = ChatOllama(
     model="rafw007/qwen35-claude-coder:9b",
