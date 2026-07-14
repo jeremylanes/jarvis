@@ -6,3 +6,4 @@ soundfile
 PySide6
 numpy
 langchain
+langchain-ollama
