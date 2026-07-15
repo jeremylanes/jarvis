@@ -1,7 +1,14 @@
-from langchain.agents import create_agent
-from langchain_ollama import ChatOllama
+import warnings
 
-from tools import current_time
+from langchain_core._api.beta_decorator import LangChainBetaWarning
+
+warnings.filterwarnings("ignore", category=LangChainBetaWarning)
+
+
+from langchain.agents import create_agent  # noqa
+from langchain_ollama import ChatOllama  # noqa
+
+from tools import current_time  # noqa
 
 llm = ChatOllama(
     model="rafw007/qwen35-claude-coder:9b",
@@ -19,22 +26,30 @@ agent = create_agent(
     ),
 )
 
-stream = agent.stream_events(
-    {
-        "messages": [
-            {
-                "role": "user",
-                "content": "il es quel heure bro."
-            }
-        ]
-    },
-    version='v3'
-)
 
+while True:
+    user_input = input("🧑‍💬 You: ").strip()
 
-for message in stream.messages:
-    for delta in message.text:
-        print(delta, end='', flush=True)
+    if user_input.lower() in {"exit", "quit"}:
+        break
+
+    stream = agent.stream_events(
+        {
+            "messages": [
+                {
+                    "role": "user",
+                    "content": user_input
+                }
+            ]
+        },
+        version='v3'
+    )
+
+    for message in stream.messages:
+        print("🤖 JARVIS: ", end="", flush=True)
+        for delta in message.text:
+            print(delta, end="", flush=True)
+        print()
 
 
 # if __name__ == "__main__":
