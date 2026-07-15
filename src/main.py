@@ -14,7 +14,7 @@ llm = ChatOllama(
     model="rafw007/qwen35-claude-coder:9b",
     # model='qwen2.5-coder:7b',
     # validate_model_on_init=True,
-    temperature=0.8,
+    temperature=0.4,
     # num_predict=256,
 )
 
